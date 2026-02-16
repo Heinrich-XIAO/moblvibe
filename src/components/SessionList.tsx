@@ -22,22 +22,22 @@ interface SessionListProps {
 
 export function SessionList({ sessions, onSelect, onDelete, onCreateNew }: SessionListProps) {
   const renderSession = ({ item }: { item: Session }) => (
-    <TouchableOpacity style={styles.sessionItem} onPress={() => onSelect(item)}>
-      <View style={styles.sessionInfo}>
+    <View style={styles.sessionItem}>
+      <TouchableOpacity style={styles.sessionInfo} onPress={() => onSelect(item)}>
         <Text style={styles.sessionTitle} numberOfLines={1}>
           {item.title || 'Untitled Session'}
         </Text>
         <Text style={styles.sessionDate}>
           {formatDate(item.updatedAt)}
         </Text>
-      </View>
+      </TouchableOpacity>
       <TouchableOpacity
         style={styles.deleteButton}
         onPress={() => onDelete(item)}
       >
         <Text style={styles.deleteText}>✕</Text>
       </TouchableOpacity>
-    </TouchableOpacity>
+    </View>
   );
 
   return (
