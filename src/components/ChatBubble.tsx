@@ -19,6 +19,8 @@ export function ChatBubble({ message }: ChatBubbleProps) {
         );
       }
       if (part.type === 'tool') {
+        // Debug: log the part to see what fields are available
+        console.log('Tool part:', JSON.stringify(part, null, 2));
         // API might use snake_case
         const toolName = part.toolName || (part as any).tool_name || 'Unknown Tool';
         const toolInput = part.toolInput || (part as any).tool_input;
