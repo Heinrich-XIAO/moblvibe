@@ -86,16 +86,18 @@ const styles = StyleSheet.create({
   },
   newButton: {
     backgroundColor: '#007AFF',
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
   },
   newButtonText: {
     color: '#fff',
     fontWeight: '600',
-    fontSize: 14,
+    fontSize: 24,
+    lineHeight: 28,
+    textAlign: 'center',
   },
   list: {
     flex: 1,
