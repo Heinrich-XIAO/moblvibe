@@ -19,22 +19,25 @@ export function ChatBubble({ message }: ChatBubbleProps) {
         );
       }
       if (part.type === 'tool') {
-        const toolName = part.toolName || 'Unknown Tool';
+        // API might use snake_case
+        const toolName = part.toolName || (part as any).tool_name || 'Unknown Tool';
+        const toolInput = part.toolInput || (part as any).tool_input;
+        const toolOutput = part.toolOutput || (part as any).tool_output;
         return (
           <View key={index} style={styles.toolContainer}>
             <Text style={styles.toolName}>
               🔧 {toolName}
             </Text>
-            {part.toolInput && (
+            {toolInput && (
               <View style={styles.toolDetails}>
                 <Text style={styles.toolLabel}>Input:</Text>
-                <Text style={styles.toolCode}>{part.toolInput}</Text>
+                <Text style={styles.toolCode}>{toolInput}</Text>
               </View>
             )}
-            {part.toolOutput && (
+            {toolOutput && (
               <View style={styles.toolDetails}>
                 <Text style={styles.toolLabel}>Output:</Text>
-                <Text style={styles.toolCode}>{part.toolOutput}</Text>
+                <Text style={styles.toolCode}>{toolOutput}</Text>
               </View>
             )}
           </View>
