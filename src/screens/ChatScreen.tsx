@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { View, StyleSheet, FlatList, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Send, Square } from 'lucide-react-native';
@@ -34,6 +34,10 @@ export function ChatScreen({ navigation }: ChatScreenProps) {
       console.error('Failed to fetch messages:', err);
     }
   }, [state.serverConfig, state.currentSession, dispatch]);
+
+  useEffect(() => {
+    fetchMessages();
+  }, [state.currentSession?.id, fetchMessages]);
 
   const handleSend = async () => {
     if (!inputText.trim() || !state.serverConfig || !state.currentSession) return;
