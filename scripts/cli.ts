@@ -8,7 +8,7 @@ const client = new ConvexClient(CONVEX_URL);
 
 function showHelp() {
   console.log(`
-Usage: bun run x <command> [options]
+Usage: bun run cli <command> [options]
 
 Commands:
   create                          Create a new session with unique code and OTP
@@ -23,10 +23,10 @@ Options:
   --help, -h          Show this help message
 
 Examples:
-  bun run x create
-  bun run x send --code ABC123 --password xyz789abc --message "Hello world"
-  bun run x list --code ABC123 --password xyz789abc
-  bun run x validate --code ABC123 --password xyz789abc
+  bun run cli create
+  bun run cli send --code ABC123 --password xyz789abc --message "Hello world"
+  bun run cli list --code ABC123 --password xyz789abc
+  bun run cli validate --code ABC123 --password xyz789abc
 `);
 }
 
@@ -144,7 +144,7 @@ async function main() {
     case "validate":
       if (!parsedArgs.code || !parsedArgs.password) {
         console.error("❌ Error: --code and --password are required");
-        console.error("   Usage: bun run x validate --code <code> --password <pwd>");
+        console.error("   Usage: bun run cli validate --code <code> --password <pwd>");
         process.exit(1);
       }
       await validateSession(parsedArgs.code, parsedArgs.password);
@@ -153,7 +153,7 @@ async function main() {
     case "send":
       if (!parsedArgs.code || !parsedArgs.password || !parsedArgs.message) {
         console.error("❌ Error: --code, --password, and --message are required");
-        console.error("   Usage: bun run x send --code <code> --password <pwd> --message <msg>");
+        console.error("   Usage: bun run cli send --code <code> --password <pwd> --message <msg>");
         process.exit(1);
       }
       await sendMessage(parsedArgs.code, parsedArgs.password, parsedArgs.message);
@@ -162,7 +162,7 @@ async function main() {
     case "list":
       if (!parsedArgs.code || !parsedArgs.password) {
         console.error("❌ Error: --code and --password are required");
-        console.error("   Usage: bun run x list --code <code> --password <pwd>");
+        console.error("   Usage: bun run cli list --code <code> --password <pwd>");
         process.exit(1);
       }
       await listMessages(parsedArgs.code, parsedArgs.password);
@@ -170,7 +170,7 @@ async function main() {
       
     default:
       console.error(`❌ Unknown command: ${command}`);
-      console.error("   Run 'bun run x --help' for usage information");
+      console.error("   Run 'bun run cli --help' for usage information");
       process.exit(1);
   }
   
