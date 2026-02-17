@@ -37,7 +37,7 @@ export function ChatScreen({ navigation }: ChatScreenProps) {
       role: msg.sender,
       createdAt: new Date(msg.timestamp).toISOString(),
     },
-    parts: [{ type: 'text', text: msg.text }]
+    parts: [{ type: 'text' as const, text: msg.text }]
   }));
   const [inputText, setInputText] = useState('');
   const [sending, setSending] = useState(false);
