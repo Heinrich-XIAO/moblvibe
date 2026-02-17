@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, StyleSheet, FlatList, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Send, Square } from 'lucide-react-native';
@@ -43,6 +43,9 @@ export function ChatScreen({ navigation }: ChatScreenProps) {
   const [sending, setSending] = useState(false);
   const flatListRef = useRef<FlatList>(null);
   const inputRef = useRef<TextInput>(null);
+  
+  // Move useMutation to top (before any early returns) to follow React hooks rules
+  const sendMutation = useMutation(api.messages.send);
 
   // Attach a real keydown handler on web to detect shift+enter
   useEffect(() => {
@@ -67,8 +70,6 @@ export function ChatScreen({ navigation }: ChatScreenProps) {
   if (!sessionId) {
     return <ActivityIndicator style={styles.container} />;
   }
-
-  const sendMutation = useMutation(api.messages.send);
 
   const handleSend = async () => {
     if (!inputText.trim() || !sessionId) return;
