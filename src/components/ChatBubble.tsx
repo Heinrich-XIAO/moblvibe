@@ -9,7 +9,7 @@ interface ChatBubbleProps {
 }
 
 export function ChatBubble({ message }: ChatBubbleProps) {
-  const isUser = message.info.role === 'user';
+  const isUser = message.info.role === 'You';
 
   const renderContent = () => {
     return message.parts.map((part, index) => {
