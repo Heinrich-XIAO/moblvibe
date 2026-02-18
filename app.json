@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "OpenCode Mobile",
-    "slug": "opencode-mobile",
+    "name": "moblvibe",
+    "slug": "moblvibe-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.opencode.mobile"
+      "bundleIdentifier": "com.moblvibe.mobile"
     },
     "android": {
       "adaptiveIcon": {
@@ -23,7 +23,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.opencode.mobile"
+      "package": "com.moblvibe.mobile"
     },
     "web": {
       "favicon": "./assets/favicon.png"

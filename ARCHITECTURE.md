@@ -255,7 +255,7 @@ This system enables a web-based chat interface to interact with local OpenCode A
      │ 8. Renders directory UI        │
      │               │                │
      │ ✓ User sees folders:           │
-     │   [openremote, xyz, test]      │
+     │   [moblvibe, xyz, test]      │
 ```
 
 ### 3.3 Starting Opencode Serve Flow
@@ -266,7 +266,7 @@ This system enables a web-based chat interface to interact with local OpenCode A
 └────┬────┘     └────┬─────┘     └────┬─────┘     └────┬─────┘
      │               │                │                │
      │ 1. User selects directory      │                │
-     │    "/Documents/openremote"     │                │
+     │    "/Documents/moblvibe"     │                │
      │               │                │                │
      │ 2. Writes start_opencode req   │                │
      │ ───────────────────────────────>                │
@@ -291,7 +291,7 @@ This system enables a web-based chat interface to interact with local OpenCode A
      │               │                │    `opencode serve
      │               │                │     --port 4097
      │               │                │     --hostname 127.0.0.1
-     │               │                │     /Documents/openremote`
+     │               │                │     /Documents/moblvibe`
      │               │                │
      │               │                │ 8. Waits for health check
      │               │                │    (polls localhost:4097
@@ -422,7 +422,7 @@ Every 60 seconds, Host Companion checks all active opencode instances:
   "sub": "host-authentication",
   "hostId": "host-abc-123",
   "sessionCode": "ABC123",
-  "directories": ["/Documents/openremote"],
+  "directories": ["/Documents/moblvibe"],
   "iat": 1704067200,
   "exp": 1706659200
 }
