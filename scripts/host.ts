@@ -1006,10 +1006,51 @@ async function shutdown(): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
+// Help & Usage
+// ---------------------------------------------------------------------------
+
+function showHelp() {
+  console.log(`OpenCode Host Companion v${VERSION}
+
+Usage: bun run host [options]
+
+Options:
+  -h, --help     Show this help message
+  -v, --version  Show version number
+
+Description:
+  Daemon that runs on the machine with OpenCode files.
+  - Subscribes to Convex 'requests' table for its hostId
+  - Manages opencode serve processes (one per directory)
+  - Relays messages between Client and opencode serve
+  - Heartbeats to Convex to signal availability
+
+Configuration:
+  Config is stored at: ~/.config/opencode-host/config.json
+
+Environment Variables:
+  CONVEX_URL     Override the Convex backend URL
+`);
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
 async function main() {
+  // Parse command line arguments
+  const args = process.argv.slice(2);
+
+  if (args.includes("--help") || args.includes("-h")) {
+    showHelp();
+    process.exit(0);
+  }
+
+  if (args.includes("--version") || args.includes("-v")) {
+    console.log(VERSION);
+    process.exit(0);
+  }
+
   console.log("======================================");
   console.log("  OpenCode Host Companion v" + VERSION);
   console.log("======================================\n");
