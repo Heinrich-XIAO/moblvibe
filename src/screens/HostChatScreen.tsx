@@ -115,7 +115,17 @@ export function HostChatScreen({ navigation, route }: Props) {
   const [refreshRequestId, setRefreshRequestId] = useState<string | null>(null);
   const [defaultModel, setDefaultModel] = useState<{ name?: string; modelID?: string; providerID?: string } | null>(null);
 
+  // Tool invocation state
+  const [pendingTool, setPendingTool] = useState<{
+    toolName: string;
+    toolInput: any;
+    toolCallId: string;
+  } | null>(null);
+  const [toolAnswer, setToolAnswer] = useState('');
+  const [submittingTool, setSubmittingTool] = useState(false);
+
   const createRequest = useMutation(api.requests.create);
+  const submitToolResult = useMutation(api.requests.submitToolResult);
 
   // Watch the active request for streaming updates
   const streamingData = useQuery(
@@ -133,6 +143,10 @@ export function HostChatScreen({ navigation, route }: Props) {
     api.requests.getStreamingResponse,
     refreshRequestId ? { requestId: refreshRequestId as any } : 'skip'
   );
+
+  // Note: Tool feature disabled - getToolStatus not deployed yet
+  // TODO: Re-enable once Convex functions are properly deployed
+  const toolStatus = null;
 
   const fetchProviders = useCallback(async () => {
     setLoadingProviders(true);
@@ -317,6 +331,12 @@ export function HostChatScreen({ navigation, route }: Props) {
     }
   }, [streamingData, activeRequestId]);
 
+  // Handle tool invocations (disabled for now)
+  useEffect(() => {
+    // Tool feature disabled - pending Convex deployment
+    return;
+  }, []);
+
   // Web enter key handler
   useEffect(() => {
     if (Platform.OS === 'web' && inputRef.current) {
@@ -387,6 +407,26 @@ export function HostChatScreen({ navigation, route }: Props) {
       setActiveRequestId(null);
     }
   }, [inputText, sending, hostId, activeJwt, port, selectedModel]);
+
+  // Handle submitting a tool result (e.g., answer to a question)
+  const handleToolSubmit = useCallback(async () => {
+    if (!pendingTool || !activeRequestId || !toolAnswer.trim()) return;
+    
+    setSubmittingTool(true);
+    
+    try {
+      await submitToolResult({
+        requestId: activeRequestId as any,
+        toolCallId: pendingTool.toolCallId,
+        result: toolAnswer.trim(),
+      });
+      
+      // The tool result will be cleared by the useEffect when toolStatus updates
+    } catch (err) {
+      console.error('Failed to submit tool result:', err);
+      setSubmittingTool(false);
+    }
+  }, [pendingTool, activeRequestId, toolAnswer, submitToolResult]);
 
   const messageItems: MessageWithParts[] = messages.map(m => ({
     info: {
@@ -621,6 +661,54 @@ export function HostChatScreen({ navigation, route }: Props) {
                 ))
               )}
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Tool Question Modal */}
+      <Modal
+        visible={!!pendingTool}
+        animationType="slide"
+        transparent
+        onRequestClose={() => {}}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Question</Text>
+            </View>
+            
+            <View style={styles.questionContainer}>
+              <Text style={styles.questionText}>
+                {pendingTool?.toolInput?.questions?.[0]?.question || 
+                 pendingTool?.toolInput?.question || 
+                 'The AI has a question for you:'}
+              </Text>
+              
+              <TextInput
+                style={styles.questionInput}
+                value={toolAnswer}
+                onChangeText={setToolAnswer}
+                placeholder="Type your answer..."
+                placeholderTextColor="#999"
+                multiline
+                maxLength={1000}
+                editable={!submittingTool}
+                autoFocus
+              />
+              
+              <TouchableOpacity
+                style={[styles.submitButton, (!toolAnswer.trim() || submittingTool) && styles.submitButtonDisabled]}
+                onPress={handleToolSubmit}
+                disabled={!toolAnswer.trim() || submittingTool}
+              >
+                {submittingTool ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={styles.submitButtonText}>Submit Answer</Text>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -871,5 +959,41 @@ const styles = StyleSheet.create({
     color: '#888',
     fontSize: 14,
     paddingVertical: 30,
+  },
+  // Tool question styles
+  questionContainer: {
+    padding: 16,
+  },
+  questionText: {
+    fontSize: 16,
+    color: '#333',
+    marginBottom: 16,
+    lineHeight: 22,
+  },
+  questionInput: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    backgroundColor: '#f9f9f9',
+    minHeight: 80,
+    textAlignVertical: 'top',
+    marginBottom: 16,
+  },
+  submitButton: {
+    backgroundColor: '#007AFF',
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  submitButtonDisabled: {
+    opacity: 0.5,
+  },
+  submitButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

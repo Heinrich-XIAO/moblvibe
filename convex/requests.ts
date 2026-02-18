@@ -15,7 +15,7 @@ export const create = mutation({
       v.literal("refresh_jwt")
     ),
     payload: v.object({
-      otpAttempt: v.optional(v.string()),
+      otp: v.optional(v.string()),
       sessionCode: v.optional(v.string()),
       path: v.optional(v.string()),
       directory: v.optional(v.string()),
@@ -148,6 +148,57 @@ export const getStreamingResponse = query({
       status: request.status,
       partialResponse: request.partialResponse || null,
       response: request.response || null,
+    };
+  },
+});
+
+// Set a pending tool invocation (called by Host when AI uses a tool)
+export const setPendingTool = mutation({
+  args: {
+    requestId: v.id("requests"),
+    toolName: v.string(),
+    toolInput: v.any(),
+    toolCallId: v.string(),
+  },
+  handler: async (ctx, { requestId, toolName, toolInput, toolCallId }) => {
+    await ctx.db.patch(requestId, {
+      pendingTool: {
+        toolName,
+        toolInput,
+        toolCallId,
+        createdAt: Date.now(),
+      },
+    });
+  },
+});
+
+// Submit a tool result (called by Client after user answers)
+export const submitToolResult = mutation({
+  args: {
+    requestId: v.id("requests"),
+    toolCallId: v.string(),
+    result: v.any(),
+  },
+  handler: async (ctx, { requestId, toolCallId, result }) => {
+    await ctx.db.patch(requestId, {
+      toolResult: {
+        toolCallId,
+        result,
+        submittedAt: Date.now(),
+      },
+    });
+  },
+});
+
+// Get tool status for a request
+export const getToolStatus = query({
+  args: { requestId: v.id("requests") },
+  handler: async (ctx, { requestId }) => {
+    const request = await ctx.db.get(requestId);
+    if (!request) return null;
+    return {
+      pendingTool: request.pendingTool || null,
+      toolResult: request.toolResult || null,
     };
   },
 });

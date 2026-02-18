@@ -34,7 +34,7 @@ export default defineSchema({
     ),
     payload: v.object({
       // For authenticate:
-      otpAttempt: v.optional(v.string()),
+      otp: v.optional(v.string()),
       sessionCode: v.optional(v.string()),
 
       // For list_dirs:
@@ -89,6 +89,25 @@ export default defineSchema({
 
     // Streaming: partial AI response text updated incrementally
     partialResponse: v.optional(v.string()),
+
+    // Tool invocations - stored when AI uses tools like 'question'
+    pendingTool: v.optional(
+      v.object({
+        toolName: v.string(),
+        toolInput: v.any(),
+        toolCallId: v.string(),
+        createdAt: v.number(),
+      })
+    ),
+
+    // Tool results - submitted by client after user answers
+    toolResult: v.optional(
+      v.object({
+        toolCallId: v.string(),
+        result: v.any(),
+        submittedAt: v.number(),
+      })
+    ),
 
     // Metadata
     createdAt: v.number(),

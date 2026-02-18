@@ -43,6 +43,14 @@ interface ActiveProcess {
   lastActivity: number;
 }
 
+interface PendingTool {
+  toolName: string;
+  toolInput: any;
+  toolCallId: string;
+  sessionId: string;
+  port: number;
+}
+
 // ---------------------------------------------------------------------------
 // Globals
 // ---------------------------------------------------------------------------
@@ -52,6 +60,7 @@ const CONFIG_FILE = join(CONFIG_DIR, "config.json");
 const VERSION = "1.0.0";
 
 const activeProcesses = new Map<string, ActiveProcess>();
+const pendingTools = new Map<string, PendingTool>(); // requestId -> PendingTool
 let convex: ConvexClient;
 let config: HostConfig;
 
@@ -445,6 +454,58 @@ async function getOrCreateSession(
 }
 
 /**
+ * Poll for tool result from client and submit it to opencode serve.
+ * Returns true if result was submitted successfully.
+ */
+async function pollAndSubmitToolResult(
+  requestId: string,
+  port: number,
+  sessionId: string,
+  timeoutMs: number = 300000 // 5 minutes default
+): Promise<boolean> {
+  const startTime = Date.now();
+  
+  while (Date.now() - startTime < timeoutMs) {
+    // Check if tool result has been submitted
+    const toolStatus = await convex.query(api.requests.getToolStatus, {
+      requestId: requestId as any,
+    });
+    
+    if (toolStatus?.toolResult) {
+      console.log(`[relay] Tool result received, submitting to opencode`);
+      
+      // Submit tool result to opencode serve
+      const response = await fetch(
+        `http://127.0.0.1:${port}/session/${sessionId}/tool`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            toolCallId: toolStatus.toolResult.toolCallId,
+            result: toolStatus.toolResult.result,
+          }),
+        }
+      );
+      
+      if (response.ok) {
+        console.log(`[relay] Tool result submitted successfully`);
+        pendingTools.delete(requestId);
+        return true;
+      } else {
+        console.error(`[relay] Failed to submit tool result: ${response.status}`);
+        return false;
+      }
+    }
+    
+    // Wait before polling again
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  
+  console.log(`[relay] Timed out waiting for tool result`);
+  return false;
+}
+
+/**
  * Stream a relay message using SSE events from opencode serve.
  * Sends prompt_async, then listens to /event SSE for text deltas,
  * pushing partial text to Convex in real-time.
@@ -616,6 +677,52 @@ async function relayMessageStreaming(
                   }
                   break;
                 }
+
+                case "tool.invoke": {
+                  // AI wants to use a tool - store it and wait for user response
+                  const toolCallId = event.properties?.toolCallId;
+                  const toolName = event.properties?.toolName;
+                  const toolInput = event.properties?.input;
+                  
+                  if (toolCallId && toolName) {
+                    console.log(`[relay] Tool invoked: ${toolName} (call: ${toolCallId})`);
+                    
+                    // Store pending tool in Convex for client to see
+                    await convex.mutation(api.requests.setPendingTool, {
+                      requestId: requestId as any,
+                      toolName,
+                      toolInput,
+                      toolCallId,
+                    });
+                    
+                    // Track locally
+                    pendingTools.set(requestId, {
+                      toolName,
+                      toolInput,
+                      toolCallId,
+                      sessionId,
+                      port,
+                    });
+                    
+                    // Pause streaming - poll for tool result and submit it
+                    console.log(`[relay] Pausing for tool result: ${toolCallId}`);
+                    const resultSubmitted = await pollAndSubmitToolResult(requestId, port, sessionId);
+                    
+                    if (!resultSubmitted) {
+                      console.error(`[relay] Failed to get/submit tool result`);
+                    }
+                    
+                    // Resume streaming - continue reading SSE events
+                    console.log(`[relay] Resuming stream after tool result`);
+                  }
+                  break;
+                }
+
+                case "tool.result": {
+                  // Tool result received (shouldn't happen here - we handle results via polling)
+                  console.log(`[relay] Tool result event received`);
+                  break;
+                }
               }
             } catch {
               // Skip malformed JSON lines
@@ -648,16 +755,22 @@ async function relayMessageStreaming(
 // ---------------------------------------------------------------------------
 
 async function handleAuthenticate(request: any): Promise<void> {
-  const { sessionCode, otpAttempt } = request.payload;
+  const { sessionCode, otp } = request.payload;
 
-  if (!sessionCode || !otpAttempt) {
-    throw new Error("Missing sessionCode or otpAttempt");
+  if (!sessionCode || !otp) {
+    throw new Error("Missing sessionCode or otp");
   }
+
+  // Log the OTP for user to copy (shown in terminal)
+  console.log(`[auth] Waiting for user to enter OTP...`);
+  console.log(`[auth] Session code: ${sessionCode}`);
+  console.log(`[auth] OTP: ${otp}`);
+  console.log(`[auth] Enter this OTP in the app to connect`);
 
   // Validate OTP against Convex session
   const sessionId = await convex.query(api.sessions.validate, {
     code: sessionCode,
-    password: otpAttempt,
+    password: otp,
   });
 
   if (!sessionId) {
