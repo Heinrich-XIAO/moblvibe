@@ -231,6 +231,11 @@ export function HostChatScreen({ navigation, route }: Props) {
             const parts = msg.parts || (msg.content ? [{ type: 'text', text: msg.content }] : []);
             
             return parts.map((part: any, partIdx: number) => {
+              // Skip empty parts
+              if (!part.text && !part.content && !part.toolName) {
+                return null;
+              }
+              
               if (part.type === 'tool' || part.toolName) {
                 return {
                   id: `${msg.id || idx}-${partIdx}`,
@@ -264,7 +269,7 @@ export function HostChatScreen({ navigation, route }: Props) {
                 createdAt: msg.createdAt || msg.timestamp || new Date().toISOString(),
               };
             });
-          }).flat();
+          }).flat().filter(Boolean);
 
           if (loadedMessages.length > 0) {
             setMessages(loadedMessages);
