@@ -34,7 +34,15 @@ export function HomeScreen({ navigation }: Props) {
   }, []);
 
   const handleBrowseFolders = () => {
-    navigation.navigate('HostSelection');
+    // If already authenticated, go directly to DirectoryBrowser
+    if (state.jwt && state.hostId && !isJwtExpired(state.jwt)) {
+      navigation.navigate('DirectoryBrowser', {
+        hostId: state.hostId,
+        jwt: state.jwt,
+      });
+    } else {
+      navigation.navigate('HostSelection');
+    }
   };
 
   const handleRecentDirectory = async (dir: RecentDirectory) => {
