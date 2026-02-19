@@ -255,24 +255,20 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   reasoningContainer: {
-    backgroundColor: '#fff3cd',
     padding: 8,
-    borderRadius: 6,
     marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#ffe69c',
   },
   reasoningLabel: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#856404',
+    color: '#666',
     textTransform: 'uppercase',
     marginBottom: 4,
   },
   reasoningText: {
     fontSize: 13,
     lineHeight: 18,
-    color: '#856404',
+    color: '#666',
   },
   inlineCode: {
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
