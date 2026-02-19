@@ -23,14 +23,18 @@ type RootStackParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
-  const endpoint = Constants.expoConfig?.extra?.CONVEX_URL || process.env.EXPO_PUBLIC_CONVEX_URL || 'https://intent-chinchilla-833.convex.cloud';
+  const endpoint = Constants.expoConfig?.extra?.CONVEX_URL || process.env.EXPO_PUBLIC_CONVEX_URL || 'https://utmost-wren-887.convex.cloud';
   const client = new ConvexReactClient(endpoint as string);
 
   return (
     <SafeAreaProvider>
       <ConvexProvider client={client}>
         <AppProvider>
-          <NavigationContainer>
+          <NavigationContainer
+            documentTitle={{
+              formatter: () => 'MoblVibe',
+            }}
+          >
             <Stack.Navigator
               initialRouteName="HostSelection"
               screenOptions={{
