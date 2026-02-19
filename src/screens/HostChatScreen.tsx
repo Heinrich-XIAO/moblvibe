@@ -222,7 +222,6 @@ export function HostChatScreen({ navigation, route }: Props) {
         const historyJson = (historyResponse.response as any)?.historyJson;
         if (historyJson) {
           const history = JSON.parse(historyJson);
-          console.log('History raw:', JSON.stringify(history, null, 2));
           
           // Convert OpenCode history format to LocalMessage format
           const loadedMessages: LocalMessage[] = (Array.isArray(history) ? history : []).map((msg: any, idx: number) => {
@@ -232,6 +231,11 @@ export function HostChatScreen({ navigation, route }: Props) {
             const parts = msg.parts || (msg.content ? [{ type: 'text', text: msg.content }] : []);
             
             return parts.map((part: any, partIdx: number) => {
+              // Skip step-related parts that don't have visible content
+              if (part.type === 'step-start' || part.type === 'step-finish') {
+                return null;
+              }
+              
               if (part.type === 'tool' || part.toolName) {
                 return {
                   id: `${msg.id || idx}-${partIdx}`,
@@ -265,7 +269,7 @@ export function HostChatScreen({ navigation, route }: Props) {
                 createdAt: msg.createdAt || msg.timestamp || new Date().toISOString(),
               };
             });
-          }).flat();
+          }).flat().filter(Boolean);
 
           if (loadedMessages.length > 0) {
             setMessages(loadedMessages);
