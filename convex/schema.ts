@@ -83,6 +83,9 @@ export default defineSchema({
         // For get_providers: JSON string of providers data
         providersJson: v.optional(v.string()),
 
+        // For start_opencode: JSON string of existing OpenCode sessions
+        sessionsJson: v.optional(v.string()),
+
         // For all failed:
         error: v.optional(v.string()),
       })

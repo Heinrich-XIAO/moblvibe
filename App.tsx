@@ -17,7 +17,7 @@ type RootStackParamList = {
   HostSelection: undefined;
   Auth: { hostId: string };
   DirectoryBrowser: { hostId: string; jwt: string };
-  HostChat: { hostId: string; jwt: string; directory: string; port: number };
+  HostChat: { hostId: string; jwt: string; directory: string; port: number; sessionsSummary?: string };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();

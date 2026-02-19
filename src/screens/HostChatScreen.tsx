@@ -26,12 +26,12 @@ type RootStackParamList = {
   HostSelection: undefined;
   Auth: { hostId: string };
   DirectoryBrowser: { hostId: string; jwt: string };
-  HostChat: { hostId: string; jwt: string; directory: string; port: number };
+  HostChat: { hostId: string; jwt: string; directory: string; port: number; sessionsSummary?: string };
 };
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'HostChat'>;
-  route: { params: { hostId: string; jwt: string; directory: string; port: number } };
+  route: { params: { hostId: string; jwt: string; directory: string; port: number; sessionsSummary?: string } };
 };
 
 interface LocalMessage {
@@ -94,7 +94,7 @@ function getFriendlyRelayError(rawError?: string | null): string {
 }
 
 export function HostChatScreen({ navigation, route }: Props) {
-  const { hostId, jwt, directory, port } = route.params;
+  const { hostId, jwt, directory, port, sessionsSummary } = route.params;
   const { state, dispatch } = useApp();
   const [activeJwt, setActiveJwt] = useState(jwt);
   const [refreshingJwt, setRefreshingJwt] = useState(false);
@@ -173,6 +173,21 @@ export function HostChatScreen({ navigation, route }: Props) {
   useEffect(() => {
     fetchProviders();
   }, [fetchProviders]);
+
+  useEffect(() => {
+    if (!sessionsSummary) return;
+    setMessages((prev) => {
+      if (prev.length > 0) return prev;
+      return [
+        {
+          id: `sessions-${Date.now()}`,
+          role: 'System',
+          text: sessionsSummary,
+          createdAt: new Date().toISOString(),
+        },
+      ];
+    });
+  }, [sessionsSummary]);
 
   useEffect(() => {
     if (refreshingJwt || !isJwtExpiringSoon(activeJwt)) return;

@@ -51,6 +51,13 @@ interface PendingTool {
   port: number;
 }
 
+interface SessionSummary {
+  id: string;
+  title?: string;
+  updatedAt?: string;
+  status?: string;
+}
+
 /** 6-digit OTP generated once on startup and kept in-memory for this process lifetime. */
 let startupOtp = "";
 
@@ -270,6 +277,75 @@ function listDirectories(basePath: string, requestedPath: string): string[] {
       `Cannot read directory: ${err instanceof Error ? err.message : String(err)}`
     );
   }
+}
+
+function normalizeSessionsPayload(payload: unknown): SessionSummary[] {
+  const toSummary = (value: unknown, fallbackId?: string): SessionSummary | null => {
+    if (!value || typeof value !== "object") return null;
+    const obj = value as Record<string, unknown>;
+    const id =
+      typeof obj.id === "string"
+        ? obj.id
+        : typeof obj.sessionID === "string"
+          ? obj.sessionID
+          : fallbackId;
+    if (!id) return null;
+
+    const title = typeof obj.title === "string" ? obj.title : undefined;
+    const updatedAtRaw =
+      typeof obj.updatedAt === "number" || typeof obj.updatedAt === "string"
+        ? obj.updatedAt
+        : typeof obj.lastActivity === "number"
+          ? obj.lastActivity
+          : undefined;
+    const status =
+      typeof obj.status === "string"
+        ? obj.status
+        : obj.status && typeof obj.status === "object"
+          ? String((obj.status as Record<string, unknown>).type ?? "")
+          : undefined;
+
+    return {
+      id,
+      title,
+      updatedAt: updatedAtRaw !== undefined ? String(updatedAtRaw) : undefined,
+      status,
+    };
+  };
+
+  if (Array.isArray(payload)) {
+    return payload
+      .map((item) => toSummary(item))
+      .filter((item): item is SessionSummary => item !== null);
+  }
+
+  if (!payload || typeof payload !== "object") {
+    return [];
+  }
+
+  const obj = payload as Record<string, unknown>;
+  if (Array.isArray(obj.sessions)) {
+    return obj.sessions
+      .map((item) => toSummary(item))
+      .filter((item): item is SessionSummary => item !== null);
+  }
+
+  return Object.entries(obj)
+    .map(([id, value]) => toSummary(value, id))
+    .filter((item): item is SessionSummary => item !== null);
+}
+
+async function getOpencodeSessions(port: number): Promise<SessionSummary[]> {
+  const res = await fetch(`http://127.0.0.1:${port}/session`, {
+    headers: { Accept: "application/json" },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to list sessions: ${res.status}`);
+  }
+
+  const payload = (await res.json()) as unknown;
+  return normalizeSessionsPayload(payload);
 }
 
 // ---------------------------------------------------------------------------
@@ -914,9 +990,22 @@ async function handleStartOpencode(request: any): Promise<void> {
 
   const { port, pid } = await startOpencodeServe(fullPath);
 
+  let sessionsJson: string | undefined;
+  try {
+    const sessions = await getOpencodeSessions(port);
+    sessionsJson = JSON.stringify(sessions.slice(0, 50));
+    console.log(`[sessions] Found ${sessions.length} sessions on port ${port}`);
+  } catch (err) {
+    console.warn(
+      `[sessions] Failed to list sessions on port ${port}: ${
+        err instanceof Error ? err.message : String(err)
+      }`
+    );
+  }
+
   await convex.mutation(api.requests.markCompleted, {
     requestId: request._id,
-    response: { port, pid },
+    response: { port, pid, sessionsJson },
   });
 
   console.log(

@@ -11,7 +11,14 @@ type RootStackParamList = {
   HostSelection: undefined;
   Auth: { hostId: string };
   DirectoryBrowser: { hostId: string; jwt: string };
-  HostChat: { hostId: string; jwt: string; directory: string; port: number };
+  HostChat: { hostId: string; jwt: string; directory: string; port: number; sessionsSummary?: string };
+};
+
+type SessionSummary = {
+  id: string;
+  title?: string;
+  updatedAt?: string;
+  status?: string;
 };
 
 type Props = {
@@ -75,6 +82,27 @@ function getFriendlyStartError(rawError?: string | null): string {
   }
 
   return rawError;
+}
+
+function buildSessionsSummary(sessionsJson?: string): string | undefined {
+  if (!sessionsJson) return undefined;
+  try {
+    const parsed = JSON.parse(sessionsJson) as SessionSummary[];
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      return 'No existing OpenCode sessions found in this directory.';
+    }
+
+    const preview = parsed.slice(0, 5).map((session, index) => {
+      const name = session.title?.trim() || session.id;
+      return `${index + 1}. ${name}`;
+    });
+
+    const extraCount = parsed.length - preview.length;
+    const extra = extraCount > 0 ? `\n...and ${extraCount} more.` : '';
+    return `Found ${parsed.length} existing OpenCode sessions:\n${preview.join('\n')}${extra}`;
+  } catch {
+    return undefined;
+  }
 }
 
 export function DirectoryBrowserScreen({ navigation, route }: Props) {
@@ -175,6 +203,7 @@ export function DirectoryBrowserScreen({ navigation, route }: Props) {
 
     if (startResponse.status === 'completed' && startResponse.response?.port) {
       const port = startResponse.response.port;
+      const sessionsSummary = buildSessionsSummary(startResponse.response.sessionsJson);
       setStarting(false);
 
       // Save current directory
@@ -189,6 +218,7 @@ export function DirectoryBrowserScreen({ navigation, route }: Props) {
         jwt: activeJwt,
         directory: currentPath,
         port,
+        sessionsSummary,
       });
     } else if (startResponse.status === 'failed') {
       setError(getFriendlyStartError(startResponse.response?.error));

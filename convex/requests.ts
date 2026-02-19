@@ -102,6 +102,7 @@ export const markCompleted = mutation({
       aiResponse: v.optional(v.string()),
       reasoning: v.optional(v.string()),
       providersJson: v.optional(v.string()),
+      sessionsJson: v.optional(v.string()),
       error: v.optional(v.string()),
     }),
   },
