@@ -58,6 +58,8 @@ interface PendingTool {
 const CONFIG_DIR = join(homedir(), ".config", "opencode-host");
 const CONFIG_FILE = join(CONFIG_DIR, "config.json");
 const VERSION = "1.0.0";
+const PROD_CONVEX_URL = "https://utmost-wren-887.convex.cloud";
+const DEV_CONVEX_URL = "https://intent-chinchilla-833.convex.cloud";
 
 const activeProcesses = new Map<string, ActiveProcess>();
 const pendingTools = new Map<string, PendingTool>(); // requestId -> PendingTool
@@ -101,7 +103,7 @@ function loadOrCreateConfig(): HostConfig {
       convexUrl:
         stored.convexUrl ||
         process.env.CONVEX_URL ||
-        "https://intent-chinchilla-833.convex.cloud",
+        PROD_CONVEX_URL,
       jwtSecret: stored.jwtSecret || randomBytes(32).toString("base64"),
       opencodePath: stored.opencodePath || "opencode",
       portRange: stored.portRange || { min: 4096, max: 8192 },
@@ -116,7 +118,7 @@ function loadOrCreateConfig(): HostConfig {
     hostId: generateHostId(),
     convexUrl:
       process.env.CONVEX_URL ||
-      "https://intent-chinchilla-833.convex.cloud",
+      PROD_CONVEX_URL,
     jwtSecret: randomBytes(32).toString("base64"),
     opencodePath: "opencode",
     portRange: { min: 4096, max: 8192 },
@@ -1091,10 +1093,11 @@ function startInactivityChecker(): NodeJS.Timer {
 // Session Watcher - Display OTP for new sessions
 // ---------------------------------------------------------------------------
 
-let lastSessionCheck = Date.now();
+let lastSessionCheck = Date.now() - 1;
 
 function startSessionWatcher(): NodeJS.Timer {
   return setInterval(async () => {
+    const queryStartedAt = Date.now();
     try {
       const sessions = await convex.query(api.sessions.getRecent, {
         since: lastSessionCheck,
@@ -1108,9 +1111,19 @@ function startSessionWatcher(): NodeJS.Timer {
         console.log("─────────────────────────────────────\n");
       }
 
-      lastSessionCheck = Date.now();
+      const newestSessionCreatedAt = sessions.reduce(
+        (max: number, session: { createdAt: number }) =>
+          session.createdAt > max ? session.createdAt : max,
+        lastSessionCheck
+      );
+
+      // Advance cursor safely to avoid missing sessions created while this query is in flight.
+      // Use a strict "greater than" query with a one-millisecond overlap.
+      lastSessionCheck = Math.max(newestSessionCreatedAt, queryStartedAt - 1);
     } catch (err) {
-      // Ignore errors - session watching is non-critical
+      console.warn(
+        `[sessions] Failed to check for new sessions: ${err instanceof Error ? err.message : String(err)}`
+      );
     }
   }, 2000); // Check every 2 seconds
 }
@@ -1152,6 +1165,7 @@ Usage: bun run host [options]
 Options:
   -h, --help     Show this help message
   -v, --version  Show version number
+  --dev          Use development Convex deployment
 
 Description:
   Daemon that runs on the machine with OpenCode files.
@@ -1164,7 +1178,7 @@ Configuration:
   Config is stored at: ~/.config/opencode-host/config.json
 
 Environment Variables:
-  CONVEX_URL     Override the Convex backend URL
+  CONVEX_URL     Override the Convex backend URL (highest priority)
 `);
 }
 
@@ -1175,6 +1189,7 @@ Environment Variables:
 async function main() {
   // Parse command line arguments
   const args = process.argv.slice(2);
+  const useDev = args.includes("--dev");
 
   if (args.includes("--help") || args.includes("-h")) {
     showHelp();
@@ -1192,7 +1207,11 @@ async function main() {
 
   // 1. Load config
   config = loadOrCreateConfig();
+  const selectedDefaultConvexUrl = useDev ? DEV_CONVEX_URL : PROD_CONVEX_URL;
+  config.convexUrl = process.env.CONVEX_URL || selectedDefaultConvexUrl;
+
   console.log(`[config] Host ID: ${formatHostId(config.hostId)}`);
+  console.log(`[config] Mode: ${useDev ? "dev" : "prod"}`);
   console.log(`[config] Convex URL: ${config.convexUrl}`);
   console.log(`[config] Base path: ${config.basePath}`);
   console.log(`[config] Port range: ${config.portRange.min}-${config.portRange.max}`);
