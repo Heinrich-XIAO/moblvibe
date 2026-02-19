@@ -21,6 +21,7 @@ export const create = mutation({
       directory: v.optional(v.string()),
       message: v.optional(v.string()),
       port: v.optional(v.number()),
+      sessionId: v.optional(v.string()),
       providerID: v.optional(v.string()),
       modelID: v.optional(v.string()),
     }),

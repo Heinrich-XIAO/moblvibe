@@ -10,7 +10,8 @@ type RootStackParamList = {
   HostSelection: undefined;
   Auth: { hostId: string };
   DirectoryBrowser: { hostId: string; jwt: string };
-  HostChat: { hostId: string; jwt: string; directory: string; port: number };
+  SessionSelection: { hostId: string; jwt: string; directory: string; port: number; sessions: Array<{ id: string; title?: string; updatedAt?: string; status?: string }> };
+  HostChat: { hostId: string; jwt: string; directory: string; port: number; sessionId?: string };
 };
 
 type Props = {

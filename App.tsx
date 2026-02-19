@@ -11,13 +11,22 @@ import Constants from 'expo-constants';
 import { HostSelectionScreen } from './src/screens/HostSelectionScreen';
 import { AuthScreen } from './src/screens/AuthScreen';
 import { DirectoryBrowserScreen } from './src/screens/DirectoryBrowserScreen';
+import { SessionSelectionScreen } from './src/screens/SessionSelectionScreen';
 import { HostChatScreen } from './src/screens/HostChatScreen';
+
+export type OpenCodeSessionSummary = {
+  id: string;
+  title?: string;
+  updatedAt?: string;
+  status?: string;
+};
 
 type RootStackParamList = {
   HostSelection: undefined;
   Auth: { hostId: string };
   DirectoryBrowser: { hostId: string; jwt: string };
-  HostChat: { hostId: string; jwt: string; directory: string; port: number; sessionsSummary?: string };
+  SessionSelection: { hostId: string; jwt: string; directory: string; port: number; sessions: OpenCodeSessionSummary[] };
+  HostChat: { hostId: string; jwt: string; directory: string; port: number; sessionId?: string };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -45,6 +54,7 @@ export default function App() {
               <Stack.Screen name="HostSelection" component={HostSelectionScreen} />
               <Stack.Screen name="Auth" component={AuthScreen} />
               <Stack.Screen name="DirectoryBrowser" component={DirectoryBrowserScreen} />
+              <Stack.Screen name="SessionSelection" component={SessionSelectionScreen} />
               <Stack.Screen name="HostChat" component={HostChatScreen} />
 
             </Stack.Navigator>

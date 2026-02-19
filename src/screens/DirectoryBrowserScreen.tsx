@@ -11,7 +11,8 @@ type RootStackParamList = {
   HostSelection: undefined;
   Auth: { hostId: string };
   DirectoryBrowser: { hostId: string; jwt: string };
-  HostChat: { hostId: string; jwt: string; directory: string; port: number; sessionsSummary?: string };
+  SessionSelection: { hostId: string; jwt: string; directory: string; port: number; sessions: SessionSummary[] };
+  HostChat: { hostId: string; jwt: string; directory: string; port: number; sessionId?: string };
 };
 
 type SessionSummary = {
@@ -84,24 +85,13 @@ function getFriendlyStartError(rawError?: string | null): string {
   return rawError;
 }
 
-function buildSessionsSummary(sessionsJson?: string): string | undefined {
-  if (!sessionsJson) return undefined;
+function parseSessions(sessionsJson?: string): SessionSummary[] {
+  if (!sessionsJson) return [];
   try {
     const parsed = JSON.parse(sessionsJson) as SessionSummary[];
-    if (!Array.isArray(parsed) || parsed.length === 0) {
-      return 'No existing OpenCode sessions found in this directory.';
-    }
-
-    const preview = parsed.slice(0, 5).map((session, index) => {
-      const name = session.title?.trim() || session.id;
-      return `${index + 1}. ${name}`;
-    });
-
-    const extraCount = parsed.length - preview.length;
-    const extra = extraCount > 0 ? `\n...and ${extraCount} more.` : '';
-    return `Found ${parsed.length} existing OpenCode sessions:\n${preview.join('\n')}${extra}`;
+    return Array.isArray(parsed) ? parsed : [];
   } catch {
-    return undefined;
+    return [];
   }
 }
 
@@ -203,28 +193,27 @@ export function DirectoryBrowserScreen({ navigation, route }: Props) {
 
     if (startResponse.status === 'completed' && startResponse.response?.port) {
       const port = startResponse.response.port;
-      const sessionsSummary = buildSessionsSummary(startResponse.response.sessionsJson);
+      const sessions = parseSessions(startResponse.response.sessionsJson);
       setStarting(false);
 
       // Save current directory
       saveCurrentDirectory(currentPath);
       dispatch({ type: 'SET_CURRENT_DIRECTORY', payload: currentPath });
       dispatch({ type: 'SET_OPENCODE_PORT', payload: port });
-      dispatch({ type: 'SET_HOST_STATUS', payload: 'chatting' });
+      dispatch({ type: 'SET_HOST_STATUS', payload: 'browsing' });
 
-      // Navigate to chat
-      navigation.navigate('HostChat', {
+      navigation.navigate('SessionSelection', {
         hostId,
         jwt: activeJwt,
         directory: currentPath,
         port,
-        sessionsSummary,
+        sessions,
       });
     } else if (startResponse.status === 'failed') {
       setError(getFriendlyStartError(startResponse.response?.error));
       setStarting(false);
     }
-  }, [startResponse]);
+  }, [startResponse, currentPath, dispatch, navigation, hostId, activeJwt]);
 
   const browse = useCallback(async (path: string) => {
     setLoading(true);

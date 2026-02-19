@@ -26,12 +26,13 @@ type RootStackParamList = {
   HostSelection: undefined;
   Auth: { hostId: string };
   DirectoryBrowser: { hostId: string; jwt: string };
-  HostChat: { hostId: string; jwt: string; directory: string; port: number; sessionsSummary?: string };
+  SessionSelection: { hostId: string; jwt: string; directory: string; port: number; sessions: Array<{ id: string; title?: string; updatedAt?: string; status?: string }> };
+  HostChat: { hostId: string; jwt: string; directory: string; port: number; sessionId?: string };
 };
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'HostChat'>;
-  route: { params: { hostId: string; jwt: string; directory: string; port: number; sessionsSummary?: string } };
+  route: { params: { hostId: string; jwt: string; directory: string; port: number; sessionId?: string } };
 };
 
 interface LocalMessage {
@@ -94,7 +95,7 @@ function getFriendlyRelayError(rawError?: string | null): string {
 }
 
 export function HostChatScreen({ navigation, route }: Props) {
-  const { hostId, jwt, directory, port, sessionsSummary } = route.params;
+  const { hostId, jwt, directory, port, sessionId } = route.params;
   const { state, dispatch } = useApp();
   const [activeJwt, setActiveJwt] = useState(jwt);
   const [refreshingJwt, setRefreshingJwt] = useState(false);
@@ -173,21 +174,6 @@ export function HostChatScreen({ navigation, route }: Props) {
   useEffect(() => {
     fetchProviders();
   }, [fetchProviders]);
-
-  useEffect(() => {
-    if (!sessionsSummary) return;
-    setMessages((prev) => {
-      if (prev.length > 0) return prev;
-      return [
-        {
-          id: `sessions-${Date.now()}`,
-          role: 'System',
-          text: sessionsSummary,
-          createdAt: new Date().toISOString(),
-        },
-      ];
-    });
-  }, [sessionsSummary]);
 
   useEffect(() => {
     if (refreshingJwt || !isJwtExpiringSoon(activeJwt)) return;
@@ -432,6 +418,9 @@ export function HostChatScreen({ navigation, route }: Props) {
         port,
         directory,
       };
+      if (sessionId) {
+        payload.sessionId = sessionId;
+      }
       if (selectedModel) {
         payload.providerID = selectedModel.providerID;
         payload.modelID = selectedModel.modelID;
@@ -459,7 +448,7 @@ export function HostChatScreen({ navigation, route }: Props) {
       setSending(false);
       setActiveRequestId(null);
     }
-  }, [inputText, sending, hostId, activeJwt, port, selectedModel]);
+  }, [inputText, sending, hostId, activeJwt, port, directory, selectedModel, sessionId]);
 
   // Handle submitting a tool result (e.g., answer to a question)
   const handleToolSubmit = useCallback(async () => {

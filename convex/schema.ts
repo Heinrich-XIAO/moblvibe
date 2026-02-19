@@ -46,6 +46,7 @@ export default defineSchema({
       // For relay_message:
       message: v.optional(v.string()),
       port: v.optional(v.number()),
+      sessionId: v.optional(v.string()),
 
       // For relay_message (model selection):
       providerID: v.optional(v.string()),

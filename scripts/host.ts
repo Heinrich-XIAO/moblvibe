@@ -519,8 +519,13 @@ const relaySessions = new Map<string, string>();
 
 async function getOrCreateSession(
   port: number,
-  directory: string
+  directory: string,
+  preferredSessionId?: string
 ): Promise<string> {
+  if (preferredSessionId) {
+    return preferredSessionId;
+  }
+
   // Check if we already have a relay session for this directory
   const existing = relaySessions.get(directory);
   if (existing) {
@@ -634,9 +639,10 @@ async function relayMessageStreaming(
   requestId: string,
   directory: string,
   onActivity?: () => void,
-  model?: { providerID: string; modelID: string }
+  model?: { providerID: string; modelID: string },
+  preferredSessionId?: string
 ): Promise<{ aiResponse: string; reasoning: string }> {
-  const sessionId = await getOrCreateSession(port, directory);
+  const sessionId = await getOrCreateSession(port, directory, preferredSessionId);
   console.log(`[relay] Using session ${sessionId}`);
 
   // Connect to SSE before sending the prompt so we don't miss events
@@ -1067,7 +1073,7 @@ async function handleRelayMessage(request: any): Promise<void> {
   const claims = verifyJwt(request.jwt, config.jwtSecret);
   if (!claims) throw new Error("Invalid or expired JWT");
 
-  const { message, port: requestedPort, directory, providerID, modelID } = request.payload;
+  const { message, port: requestedPort, directory, providerID, modelID, sessionId } = request.payload;
   if (!message) throw new Error("Missing message");
   if (!requestedPort) throw new Error("Missing port");
 
@@ -1114,7 +1120,8 @@ async function handleRelayMessage(request: any): Promise<void> {
     request._id,
     relayDirectory,
     activityCallback,
-    modelSelection
+    modelSelection,
+    sessionId
   );
 
   await convex.mutation(api.requests.markCompleted, {
